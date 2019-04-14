@@ -31,14 +31,25 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         for kb in base_obj.data.shape_keys.key_blocks:
             kb.value = 1
             shapes.append(base_obj.to_mesh(context.depsgraph,True))
-            shapes[-1].name = f"{base_obj.name}_{kb.name}"
+            shapes[-1].name = kb.name
             kb.value = 0
         dup_obj = bpy.data.objects.new(f"{base_obj.name}.dup",shapes[0])
         context.collection.objects.link(dup_obj)
-        dup_obj.location = [p+d for p,d in zip(base_obj.location,[3,0,0])]
         bpy.context.view_layer.objects.active = dup_obj
 
+        #transfer vertex group
+        for vg in base_obj.vertex_groups:
+            dup_obj.vertex_groups.new(name=vg.name)
+        mod = dup_obj.modifiers.new(name="tmp", type="DATA_TRANSFER")
+        mod.object = base_obj
+        mod.use_vert_data = True
+        mod.data_types_verts = {'VGROUP_WEIGHTS'}
+        bpy.ops.object.modifier_apply(apply_as='DATA', modifier=mod.name)
+
+
+        dup_obj.location = [p + d for p, d in zip(base_obj.location, [3, 0, 0])]
         
+        #shapekey_ta
         dup_obj.shape_key_add(name="Basis")
 
         for shape in shapes[1:]:
@@ -47,8 +58,10 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
                 kb.data[id].co = v.co
         for shape in shapes[1:]:
             bpy.data.meshes.remove(shape)
-        if "MIRROR" in [m.type for m in base_obj.modifiers]:
-            bpy.ops.object.vertex_group_mirror(mirror_weights=True, flip_group_names=True, all_groups=True, use_topology=False)
+
+        #transfer vertex group
+        #if "MIRROR" in [m.type for m in base_obj.modifiers]:
+        #    bpy.ops.object.vertex_group_mirror(mirror_weights=True, flip_group_names=True, all_groups=True, use_topology=True)
         return {'FINISHED'}
     
 # アドオン有効化時の処理
