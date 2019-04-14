@@ -20,26 +20,33 @@ bl_info = {
 
 class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
     bl_idname = "object.icyp_add_modifier_applied_object"
-    bl_label = "Add Modifier applied object"
+    bl_label = "Add Modifier applied object with shapekeys"
     bl_description = "Duplicate active object with modifier applied"
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self,context):
         base_obj = context.active_object
+        base_key_blocks = base_obj.data.shape_keys.key_blocks if base_obj.data.shape_keys else []
         shapes = []
+
         #init
-        for kb in base_obj.data.shape_keys.key_blocks:
+        for kb in base_key_blocks:
             kb.value = 0
-        for tmp_mod in base_obj.modifiers:
-            if tmp_mod.type == "MIRROR":
-                tmp_mod.use_mirror_merge = False
+        if  len(base_key_blocks)!=0:
+            for tmp_mod in base_obj.modifiers:
+                if tmp_mod.type == "MIRROR":
+                    tmp_mod.use_mirror_merge = False
 
         #Duplicate meshes
-        for kb in base_obj.data.shape_keys.key_blocks:
-            kb.value = 1
+        if len(base_key_blocks) > 0:           
+            for kb in base_key_blocks:
+                kb.value = 1
+                shapes.append(base_obj.to_mesh(context.depsgraph,True))
+                shapes[-1].name = kb.name
+                kb.value = 0
+        else:
             shapes.append(base_obj.to_mesh(context.depsgraph,True))
-            shapes[-1].name = kb.name
-            kb.value = 0
+        
         dup_obj = bpy.data.objects.new(f"{base_obj.name}.dup",shapes[0])
         context.collection.objects.link(dup_obj)
         bpy.context.view_layer.objects.active = dup_obj
@@ -55,7 +62,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier=mod.name)
 
 
-        dup_obj.location = [p + d for p, d in zip(base_obj.location, [3, 0, 0])]
+        dup_obj.location = [p + d for p, d in zip(base_obj.location, [base_obj.bound_box[5][0]-base_obj.bound_box[0][0], 0, 0])]
         
         #shapekey_transfer
         dup_obj.shape_key_add(name="Basis")
