@@ -36,6 +36,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         dup_obj = bpy.data.objects.new(f"{base_obj.name}.dup",shapes[0])
         context.collection.objects.link(dup_obj)
         bpy.context.view_layer.objects.active = dup_obj
+        dup_obj.location = base_obj.location
 
         #transfer vertex group
         for vg in base_obj.vertex_groups:
@@ -49,7 +50,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
 
         dup_obj.location = [p + d for p, d in zip(base_obj.location, [3, 0, 0])]
         
-        #shapekey_ta
+        #shapekey_transfer
         dup_obj.shape_key_add(name="Basis")
 
         for shape in shapes[1:]:
@@ -59,9 +60,6 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         for shape in shapes[1:]:
             bpy.data.meshes.remove(shape)
 
-        #transfer vertex group
-        #if "MIRROR" in [m.type for m in base_obj.modifiers]:
-        #    bpy.ops.object.vertex_group_mirror(mirror_weights=True, flip_group_names=True, all_groups=True, use_topology=True)
         return {'FINISHED'}
     
 # アドオン有効化時の処理
@@ -70,7 +68,7 @@ classes = [
     ]
     
 def add_button(self, context):
-    if context.active_object.type == "Mesh":
+    if context.active_object.type == "MESH":
         self.layout.operator(ICYP_OT_Add_Modifier_applied_object.bl_idname)
     
 def register():
