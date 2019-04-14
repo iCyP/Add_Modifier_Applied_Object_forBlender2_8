@@ -1,3 +1,5 @@
+#MIT License @iCyP 2019
+
 import bpy,bmesh
 
 bl_info = {
@@ -18,8 +20,8 @@ bl_info = {
 
 class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
     bl_idname = "object.icyp_add_modifier_applied_object"
-    bl_label = "Add_Modifier_applied_object"
-    bl_description = "Add_Modifier_applied_object"
+    bl_label = "Add Modifier applied object"
+    bl_description = "Duplicate active object with modifier applied"
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self,context):
@@ -28,6 +30,11 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         #init
         for kb in base_obj.data.shape_keys.key_blocks:
             kb.value = 0
+        for tmp_mod in base_obj.modifiers:
+            if tmp_mod.type == "MIRROR":
+                tmp_mod.use_mirror_merge = False
+
+        #Duplicate meshes
         for kb in base_obj.data.shape_keys.key_blocks:
             kb.value = 1
             shapes.append(base_obj.to_mesh(context.depsgraph,True))
@@ -38,7 +45,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         bpy.context.view_layer.objects.active = dup_obj
         dup_obj.location = base_obj.location
 
-        #transfer vertex group
+        #transfer vertex group(to_mesh breaks vertex index)
         for vg in base_obj.vertex_groups:
             dup_obj.vertex_groups.new(name=vg.name)
         mod = dup_obj.modifiers.new(name="tmp", type="DATA_TRANSFER")
@@ -54,7 +61,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         dup_obj.shape_key_add(name="Basis")
 
         for shape in shapes[1:]:
-            kb = dup_obj.shape_key_add(name = shape.name)
+            kb = dup_obj.shape_key_add(name=shape.name)
             for id,v in enumerate(shape.vertices):
                 kb.data[id].co = v.co
         for shape in shapes[1:]:
