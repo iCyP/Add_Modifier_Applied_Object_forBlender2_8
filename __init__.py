@@ -77,9 +77,7 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         
         #shapekey_transfer
         dup_obj.shape_key_add(name="Basis")
-
-        for shape in shape_objs:
-            bpy.ops.object.join_shapes()
+        bpy.ops.object.join_shapes()
         for s in shape_objs:
             bpy.data.objects.remove(s)
         for shape in shapes[1:]:
