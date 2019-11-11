@@ -38,19 +38,30 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
                     tmp_mod.use_mirror_merge = False
 
         #Duplicate meshes
+
         if len(base_key_blocks) > 0:           
             for kb in base_key_blocks:
                 kb.value = 1
-                shapes.append(base_obj.to_mesh(context.depsgraph,True))
+                bpy.context.view_layer.depsgraph.update()
+                ob_eval = base_obj.evaluated_get(bpy.context.view_layer.depsgraph)
+                tmp_mesh = ob_eval.to_mesh().copy()
+                shapes.append(tmp_mesh)
                 shapes[-1].name = kb.name
                 kb.value = 0
         else:
-            shapes.append(base_obj.to_mesh(context.depsgraph,True))
+            ob_eval = base_obj.evaluated_get(bpy.context.view_layer.depsgraph)
+            tmp_mesh = ob_eval.to_mesh().copy()
+            shapes.append(tmp_mesh)
         
         dup_obj = bpy.data.objects.new(f"{base_obj.name}.dup",shapes[0])
         context.collection.objects.link(dup_obj)
         bpy.context.view_layer.objects.active = dup_obj
         dup_obj.location = base_obj.location
+
+        shape_objs = [bpy.data.objects.new(s.name,s) for s in shapes[1:]]
+        for s in shape_objs:
+            context.collection.objects.link(s)
+            s.select_set(True)
 
         #transfer vertex group(to_mesh breaks vertex index)
         for vg in base_obj.vertex_groups:
@@ -67,10 +78,10 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         #shapekey_transfer
         dup_obj.shape_key_add(name="Basis")
 
-        for shape in shapes[1:]:
-            kb = dup_obj.shape_key_add(name=shape.name)
-            for id,v in enumerate(shape.vertices):
-                kb.data[id].co = v.co
+        for shape in shape_objs:
+            bpy.ops.object.join_shapes()
+        for s in shape_objs:
+            bpy.data.objects.remove(s)
         for shape in shapes[1:]:
             bpy.data.meshes.remove(shape)
 
@@ -82,8 +93,7 @@ classes = [
     ]
     
 def add_button(self, context):
-    if context.active_object.type == "MESH":
-        self.layout.operator(ICYP_OT_Add_Modifier_applied_object.bl_idname)
+    self.layout.operator(ICYP_OT_Add_Modifier_applied_object.bl_idname)
     
 def register():
     for cls in classes:
