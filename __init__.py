@@ -41,11 +41,11 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
         if len(base_key_blocks) > 0:           
             for kb in base_key_blocks:
                 kb.value = 1
-                shapes.append(base_obj.to_mesh(context.depsgraph,True))
+                shapes.append(base_obj.to_mesh(depsgraph = context.view_layer.depsgraph,preserve_all_data_layers = True).copy())
                 shapes[-1].name = kb.name
                 kb.value = 0
         else:
-            shapes.append(base_obj.to_mesh(context.depsgraph,True))
+            shapes.append(base_obj.to_mesh(depsgraph = context.view_layer.depsgraph,preserve_all_data_layers = True).copy())
         
         dup_obj = bpy.data.objects.new(f"{base_obj.name}.dup",shapes[0])
         context.collection.objects.link(dup_obj)
@@ -82,8 +82,7 @@ classes = [
     ]
     
 def add_button(self, context):
-    if context.active_object.type == "MESH":
-        self.layout.operator(ICYP_OT_Add_Modifier_applied_object.bl_idname)
+    self.layout.operator(ICYP_OT_Add_Modifier_applied_object.bl_idname)
     
 def register():
     for cls in classes:
