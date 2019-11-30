@@ -82,7 +82,8 @@ class ICYP_OT_Add_Modifier_applied_object(bpy.types.Operator):
             bpy.data.objects.remove(s)
         for shape in shapes[1:]:
             bpy.data.meshes.remove(shape)
-
+        for fmat, tmat in zip(base_obj.material_slots, dup_obj.material_slots):
+            tmat.material = fmat.material
         return {'FINISHED'}
     
 # アドオン有効化時の処理
